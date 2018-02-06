@@ -21,17 +21,15 @@ barplot(table(rfm.end$endym))
 
 ## 고객별 가입기간 생성
 
-rfm.end$term <- as.Date("20120101", "%Y%m%d") - rfm.end$enddt
-summary(rfm.end$term) # 분석일자를 '20120101'로 지정
-
+# 분석일자를 '20120101'로 지정
 rfm.end$term <- as.numeric(as.Date("20120101", "%Y%m%d") - rfm.end$enddt)
 summary(rfm.end$term) # term 변수를 숫자로 바꿔줘야 한다
 
 ## 고객 Recency 세분화
 
-rfm.end$rseg <- ifelse(rfm.end$term <= 39, 1, 
+rfm.end$rseg <- ifelse(rfm.end$term <= 39, 1,
                        ifelse(rfm.end$term <= 73, 2,
-                       ifelse(rfm.end$term <= 166, 3, 4))) # 4분위수 기준으로 4개 그룹으로 생성
+                              ifelse(rfm.end$term <= 166, 3, 4))) # 4분위수 기준으로 4개 그룹으로 생성
 
 table(rfm.end$rseg)
 barplot(table(rfm.end$rseg))
