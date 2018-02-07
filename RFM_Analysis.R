@@ -11,7 +11,6 @@ str(rfm)
 summary(rfm$orderdt)
 
 ## 고객별 최종구매일부터 분석시점까지의 경과기간을 Recency로 생성
-
 rfm.end <- aggregate.data.frame(rfm$orderdt, list(rfm$CustomerID), max) # 고객별 최종구매일 생성
 
 colnames(rfm.end) <- c("CustomerID", "enddt")
@@ -19,14 +18,16 @@ rfm.end$endym <- format(rfm.end$enddt, "%Y%m") # 최종가입일을 문자로 �
 table(rfm.end$endym)
 barplot(table(rfm.end$endym))
 
-## 고객별 가입기간 생성
 
-# 분석일자를 '20120101'로 지정
-rfm.end$term <- as.numeric(as.Date("20120101", "%Y%m%d") - rfm.end$enddt)
-summary(rfm.end$term) # term 변수를 숫자로 바꿔줘야 한다
+
+## 고객별가입기간생성
+rfm.end$term= as.Date("20120101", "%Y%m%d") -rfm.end$enddt
+summary(rfm.end$term) # 분석일자를‘20120101’로지정
+rfm.end$term= as.numeric(as.Date("20120101", "%Y%m%d") -rfm.end$enddt)
+summary(rfm.end$term) # term 변수를numeric 으로생성
+
 
 ## 고객 Recency 세분화
-
 rfm.end$rseg <- ifelse(rfm.end$term <= 39, 1,
                        ifelse(rfm.end$term <= 73, 2,
                               ifelse(rfm.end$term <= 166, 3, 4))) # 4분위수 기준으로 4개 그룹으로 생성
@@ -34,22 +35,26 @@ rfm.end$rseg <- ifelse(rfm.end$term <= 39, 1,
 table(rfm.end$rseg)
 barplot(table(rfm.end$rseg))
 
+
 # Frequency 산출
-## 고객별 구매일을 count 하여 구매횟수 생성
-rfm.freq <- subset(rfm, select = c("CustomerID", "orderdt"))
-rfm.freq2 <- unique(rfm.freq)
-rfm.freq3 <- aggregate.data.frame(rfm.freq2$orderdt, list(rfm.freq2$CustomerID), length)
-colnames(rfm.freq3) = c("CustomerId", "cnt")
-
+## 고객별구매일을count하여구매횟수생성
+rfm.freq= subset(rfm, select = c("CustomerID", "orderdt"))
+rfm.freq2 = unique(rfm.freq) # 구매일중복제거
+rfm.freq3 = aggregate.data.frame(rfm.freq2$orderdt, list(rfm.freq2$CustomerID), length)
+colnames(rfm.freq3) = c("CustomerID","cnt")
 summary(rfm.freq3$cnt)
-hist(rfm.freq3$cnt)
+hist(rfm.freq3$cnt) # Histogram Plot
 
-rfm.freq3$fseg <- ifelse(rfm.freq3$cnt <= 1, 1, 
-                       ifelse(rfm.freq3$cnt <= 2, 2,
-                              ifelse(rfm.freq3$cnt <= 5, 3, 4))) # 4분위수 기준으로 4개 그룹으로 생성
-table(rfm.freq3$fseg)
-barplot(table(rfm.freq3$fseg))
-aggregate(rfm.freq3$cnt, list(rfm.freq3$fseg), mean)
+
+## 고객Frequency 세분화
+rfm.end$loyaltyrfm= ifelse(rfm.end$term<= 39, 1,
+                           ifelse(rfm.end$term<= 73, 2,
+                                  ifelse(rfm.end$term<= 166, 3, 4 )))
+# 4분위수기준으로4개그룹생성
+table(rfm.end$loyaltyrfm)
+barplot(table(rfm.end$loyaltyrfm))
+aggregate(rfm.end$term, list(rfm.end$loyaltyrfm), mean) #그룹별평균frequency
+
 
 ##
 ## Moneytary 세분화
@@ -64,6 +69,13 @@ colnames(rfm.moneytary) <- c("CustomerID", "totamt")
 summary(rfm.moneytary$totamt)
 hist(rfm.moneytary$totamt)
 
+
+# 4분위수기준으로4개그룹생성
+table(rfm.monetary$mseg)
+barplot(table(rfm.monetary$mseg))
+aggregate(rfm.monetary$totamt, list(rfm.monetary$mseg), mean) #그룹별평균금액
+
+
 ## 3. 고객별 구매금액을 4분위수 기준으로 4개 그룹 생성
 rfm.moneytary$mseg <- ifelse(rfm.moneytary$totamt <= 293, 1, 
                          ifelse(rfm.moneytary$totamt <= 648, 2,
@@ -75,13 +87,14 @@ barplot(table(rfm.moneytary$mseg))
 aggregate(rfm.moneytary$totamt, list(rfm.moneytary$mseg), mean) # 그룹별 평균
 
 
-## R, F, M 정보 통합
-rfm.all <- merge(rfm.end, rfm.freq3, by = "CustomerID", all.xy = T)
-rfm.all <- merge(rfm.all, rfm.moneytary, by = "CustomerID", all.xy = T)
+## R, F, M 정보통합
+rfm.all <-  merge(rfm.end, rfm.freq3, by = "CustomerID", all.xy= TRUE)
+rfm.all <-  merge(rfm.all, rfm.monetary, by = "CustomerID", all.xy= TRUE)
 
-# 세분화 그룹 생성
-rfm.all$rfmid <- paste(rfm.all$rseg, rfm.all$fseg, rfm.all$mseg, sep = "")
+## 세분화그룹생성
+rfm.all$rfmid <- paste(rfm.all$rseg, rfm.all$fseg, rfm.all$mseg, sep="")
 table(rfm.all$rfmid)
+
 
 #--------------------------------------------------------------------------#
 
